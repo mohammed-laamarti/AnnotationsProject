@@ -1,0 +1,94 @@
+<!--<div th:fragment="content">-->
+<!--    <h2>Bienvenue dans le tableau de bord</h2>-->
+<!--    <p>Voici le contenu du dashboard.</p>-->
+<!--</div>-->
+
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<div th:replace="~{layout/layout :: layout('hhhhh')}"></div>
+<div th:fragment="content">
+    <h1>hhh</h1>
+    <div th:if="${message}" class="bg-green-500 text-white p-2 mb-4 rounded" th:text="${message}"></div>
+    <h2 class="text-2xl font-semibold mb-4">Statistiques</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+        <div class="card">
+            <h3 class="text-lg font-semibold">Nombre de datasets</h3>
+            <p class="text-3xl font-bold text-primary" th:text="${datasets.size()}"></p>
+        </div>
+        <div class="card">
+            <h3 class="text-lg font-semibold">Nombre d'annotateurs</h3>
+            <p class="text-3xl font-bold text-primary" th:text="${totalAnnotators}"></p>
+        </div>
+    </div>
+    <h2 class="text-2xl font-semibold mb-4">Liste des datasets</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div th:each="dataset : ${datasets}" class="card">
+            <h3 th:text="${dataset.nom}"></h3>
+            <p th:text="${dataset.description}"></p>
+            <div class="mb-2">
+                <span class="text-sm font-medium">Progrès</span>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div class="bg-primary h-2.5 rounded-full" th:style="'width: ' + ${datasetProgress[dataset.id]} + '%'"></div>
+                </div>
+                <span class="text-sm text-gray-600" th:text="${datasetProgress[dataset.id]} + '%'"></span>
+            </div>
+            <a th:href="@{/admin/dataset/{id}(id=${dataset.id})}" class="btn btn-primary">Voir les détails</a>
+        </div>
+    </div>
+</div>
+</html>
+
+
+
+
+
+<!--<html xmlns:th="http://www.thymeleaf.org">-->
+<!--<div th:fragment="content">-->
+<!--    <h2>importer les donnees :</h2>-->
+<!--    <input type="file">-->
+<!--    <h1>title</h1>-->
+<!--    <h2>classes :</h2>-->
+<!--    <button class="btn btn-primary">Create</button>-->
+<!--    <div class="classes">-->
+<!--        <button class="btn btn-secondary">class1</button>-->
+<!--        <button class="btn btn-secondary">class2</button>-->
+<!--        <button class="btn btn-secondary">class3</button>-->
+<!--    </div>-->
+<!--    <h2>choisir les utilisateurs :</h2>-->
+<!--    <table class="table">-->
+<!--        <thead>-->
+<!--&lt;!&ndash;        <tr>&ndash;&gt;-->
+<!--            <th scope="col">#</th>-->
+<!--            <th scope="col">First</th>-->
+<!--            <th scope="col">Last</th>-->
+<!--            <th scope="col">Email</th>-->
+
+<!--        </tr>-->
+<!--        </thead>-->
+<!--        <tbody>-->
+<!--        <tr>-->
+<!--            <th scope="row">1</th>-->
+<!--            <td>Mark</td>-->
+<!--            <td>Otto</td>-->
+<!--            <td>@mdo</td>-->
+
+<!--        </tr>-->
+<!--        <tr>-->
+<!--            <th scope="row">2</th>-->
+<!--            <td>Jacob</td>-->
+<!--            <td>Thornton</td>-->
+<!--            <td>@fat</td>-->
+
+<!--        </tr>-->
+<!--        <tr>-->
+<!--            <th scope="row">3</th>-->
+<!--            <td>John</td>-->
+<!--            <td>Doe</td>-->
+<!--            <td>@social</td>-->
+
+<!--        </tr>-->
+<!--        </tbody>-->
+<!--    </table>-->
+<!--</div>-->
+<!--</html>-->
+

@@ -1,0 +1,53 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<div th:fragment="content">
+    <div class="users-header">
+        <h2>users</h2>
+        <button class="btn btn-primary">Create</button>
+    </div>
+
+
+    <table class="table">
+        <thead>
+        <tr>
+            <th scope="col">#</th>
+            <th scope="col">First</th>
+            <th scope="col">Last</th>
+            <th scope="col">Email</th>
+            <th scope="col">Operations</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <th scope="row">1</th>
+            <td>Mark</td>
+            <td>Otto</td>
+            <td>@mdo</td>
+            <td>
+                <a href="#" class="btn btn-success">Edit</a>
+                <a href="#" class="btn btn-danger">Drop</a>
+            </td>
+        </tr>
+        <tr>
+            <th scope="row">2</th>
+            <td>Jacob</td>
+            <td>Thornton</td>
+            <td>@fat</td>
+            <td>
+                <a href="#" class="btn btn-success">Edit</a>
+                <a href="#" class="btn btn-danger">Drop</a>
+            </td>
+        </tr>
+        <tr>
+            <th scope="row">3</th>
+            <td>John</td>
+            <td>Doe</td>
+            <td>@social</td>
+            <td>
+                <a href="#" class="btn btn-success">Edit</a>
+                <a href="#" class="btn btn-danger">Drop</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+</html>

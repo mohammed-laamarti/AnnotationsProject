@@ -1,0 +1,28 @@
+body {
+    background-color: #f8f9fa;
+    padding: 40px;
+}
+
+.form-container {
+    max-width: 500px;
+    margin: auto;
+    padding: 30px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+}
+
+.form-control {
+    margin-bottom: 15px;
+}
+
+.radio-group label {
+    display: block;
+    margin-bottom: 8px;
+}
+
+.btn-group {
+
+    display: flex;
+    justify-content: space-between;
+}
