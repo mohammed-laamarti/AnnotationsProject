@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/layout}">
+<head>
+    <title>Affectation des Annotateurs</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+<div layout:fragment="content" class="assign-annotators">
+    <div class="card">
+        <h3 th:text="${dataset.nom}"></h3>
+        <p><strong>Description :</strong> <span th:text="${dataset.description}"></span></p>
+        <p><strong>Nombre de couples :</strong> <span th:text="${#lists.size(dataset.couplesTextes)}"></span></p>
+        <a th:href="@{/admin/datasets}" class="btn btn-secondary">Retour aux détails</a>
+    </div>
+
+    <h3>Annotateurs affectés</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+            <tr>
+                <th>Prénom</th>
+                <th>Nom</th>
+                <th>Login</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="annotator : ${assignedAnnotators}">
+                <td th:text="${annotator.prenom}"></td>
+                <td th:text="${annotator.nom}"></td>
+                <td th:text="${annotator.login}"></td>
+                <td>
+                    <form th:action="@{/admin/dataset/assign/{id}/remove(id=${dataset.id})}" method="post">
+                        <input type="hidden" name="annotatorId" th:value="${annotator.id}">
+                        <button type="submit" class="btn btn-danger">Retirer</button>
+                    </form>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(assignedAnnotators)}">
+                <td colspan="4">Aucun annotateur affecté.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>Annotateurs disponibles</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+            <tr>
+                <th>Prénom</th>
+                <th>Nom</th>
+                <th>Login</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="annotator : ${availableAnnotators}">
+                <td th:text="${annotator.prenom}"></td>
+                <td th:text="${annotator.nom}"></td>
+                <td th:text="${annotator.login}"></td>
+                <td>
+                    <form th:action="@{/admin/dataset/assign/{id}/add(id=${dataset.id})}" method="post">
+                        <input type="hidden" name="annotatorId" th:value="${annotator.id}">
+                        <button type="submit" class="btn btn-primary">Ajouter</button>
+                    </form>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(availableAnnotators)}">
+                <td colspan="4">Aucun annotateur disponible.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>Annotateurs sélectionnés (en attente de répartition)</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+            <tr>
+                <th>Prénom</th>
+                <th>Nom</th>
+                <th>Login</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="annotator : ${selectedAnnotators}">
+                <td th:text="${annotator.prenom}"></td>
+                <td th:text="${annotator.nom}"></td>
+                <td th:text="${annotator.login}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(selectedAnnotators)}">
+                <td colspan="3">Aucun annotateur sélectionné.</td>
+            </tr>
+            </tbody>
+        </table>
+        <form th:action="@{/admin/dataset/assign/{id}/distribute(id=${dataset.id})}" method="post">
+            <button type="submit" class="btn btn-success">Valider la répartition</button>
+        </form>
+    </div>
+
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+</div>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Travailler sur la tâche</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" th:href="@{/css/user.css}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .work-container {
+            padding: 30px;
+            text-align: center;
+            width: 33%;
+            max-width: 1200px;
+            margin: auto;
+        }
+        .task-details, .annotation-form {
+            margin-bottom: 30px;
+            text-align: left;
+        }
+        .input-group {
+            margin: 15px 0;
+        }
+        input[type="text"] {
+            padding: 10px;
+            width: 100%;
+            max-width: 600px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .radio-group {
+            margin: 15px 0;
+        }
+        .radio-group label {
+            margin-left: 5px;
+            margin-right: 20px;
+        }
+        .button-group {
+            display: flex;
+            justify-content: space-between; /* "Retour" à gauche, "Suivant" à droite */
+            align-items: center;
+            margin-top: 20px;
+        }
+        .btn {
+            padding: 12px 24px;
+            background-color: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #764ba2;
+        }
+        .alert {
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+<div class="work-container">
+    <h2>Travailler sur la tâche</h2>
+    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+
+    <div class="task-details">
+        <p><strong>ID :</strong> <span th:text="${task.id}"></span></p>
+        <p><strong>Dataset :</strong> <span th:text="${task.dataset.nom} ?: 'Sans nom'"></span></p>
+        <p><strong>Date Limite :</strong> <span th:text="${task.dateLimite != null} ? ${#dates.format(task.dateLimite, 'dd/MM/yyyy')} : 'Non définie'"></span></p>
+        <p><strong>Avancement :</strong> <span th:text="${task.progress} + ' / ' + ${task.size}"></span> (<span th:text="${task.progressPercentage} + '%'"></span>)</p>
+    </div>
+
+    <form th:action="@{/annotator/task/__${task.id}__/work}" th:method="post" class="annotation-form">
+        <input type="hidden" th:name="index" th:value="${index}">
+        <div class="input-group">
+            <label>Texte 1 :</label>
+            <input type="text" th:value="${task.couplesTextes[index].texte1}" readonly>
+        </div>
+        <div class="input-group">
+            <label>Texte 2 :</label>
+            <input type="text" th:value="${task.couplesTextes[index].texte2}" readonly>
+        </div>
+        <div class="input-group">
+            <label>Annotation :</label>
+            <div class="radio-group" th:each="className, iter : ${possibleClasses}">
+                <input type="radio" th:name="annotation" th:value="${className}" th:id="'class-' + ${iter.index}"
+                       th:checked="${task.couplesTextes[index].annotation != null and task.couplesTextes[index].annotation.classChoisi == className}">
+                <label th:for="'class-' + ${iter.index}" th:text="${className}"></label>
+            </div>
+        </div>
+        <div class="button-group">
+            <a th:href="@{/annotateur/accueil}" class="btn">Retour</a>
+            <button type="submit" class="btn">Suivant</button>
+        </div>
+    </form>
+</div>
+</body>
+</html>

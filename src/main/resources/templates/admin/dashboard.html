@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/layout}">
+<head>
+    <title>Dashboard Admin</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div layout:fragment="content" class="dashboard">
+    <!-- Section 1: Statistiques Générales -->
+    <h2 class="text-2xl font-semibold mb-4" style="color: var(--text-color); margin-bottom: var(--margin-element);">Statistiques</h2>
+    <div class="flex flex-row gap-6 mb-6 overflow-x-auto">
+        <div class="card flex-shrink-0 w-64">
+            <h3 class="text-lg font-semibold">Nombre de Datasets</h3>
+            <p class="text-3xl font-bold text-primary" th:text="${datasets?.size() ?: 0}">0</p>
+        </div>
+        <div class="card flex-shrink-0 w-64">
+            <h3 class="text-lg font-semibold">Nombre d'Annotateurs</h3>
+            <p class="text-3xl font-bold text-primary" th:text="${totalAnnotators ?: 0}">0</p>
+        </div>
+        <div class="card flex-shrink-0 w-64">
+            <h3 class="text-lg font-semibold">Annotations Today</h3>
+            <p class="text-3xl font-bold text-primary" th:text="${totalAnnotationsToday ?: 0}">78</p>
+        </div>
+        <div class="card flex-shrink-0 w-64">
+            <h3 class="text-lg font-semibold">Taux de completion</h3>
+            <p class="text-3xl font-bold text-primary">67%</p>
+        </div>
+    </div>
+
+    <!-- Section 2: Diagramme des Progrès des Datasets (Dynamique) -->
+    <h2 class="text-2xl font-semibold mb-4" style="color: var(--text-color); margin-bottom: var(--margin-element);">Progrès des Datasets (Diagramme)</h2>
+    <div class="card">
+        <canvas id="datasetProgressChart" style="max-height: 400px;"></canvas>
+    </div>
+
+    <!-- Section 3: Top 5 Annotateurs -->
+    <h2 class="text-2xl font-semibold mb-4" style="color: var(--text-color); margin-bottom: var(--margin-element);">Top 5 Annotateurs</h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="card" th:each="annotateur, stat : ${topAnnotators}">
+            <div class="annotator-row">
+                <span class="annotator-name" th:text="${'#' + (stat.index + 1) + '. ' + annotateur.nom + ' ' + annotateur.prenom + ' (' + annotateur.login + ')'}"></span>
+            </div>
+        </div>
+
+        <div th:if="${#lists.isEmpty(topAnnotators)}" class="card text-center">
+            <p style="color: var(--text-light);">Aucun annotateur dans le top 5</p>
+        </div>
+        </div>
+    <!-- JavaScript to Render the Dynamic Chart -->
+    <script th:inline="javascript">
+        let dataset = /*[[${datasetJson}]]*/ {};
+        dataset = JSON.parse(/*[[${datasetJson}]]*/ ''); // ✅ parse JSON safely
+
+        const labels = Object.keys(dataset);           // noms des datasets
+        const data = Object.values(dataset);           // pourcentages
+
+        const ctx = document.getElementById('datasetProgressChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Progrès (%)',
+                    data: data,
+                    backgroundColor: 'rgba(102, 126, 234, 0.6)',
+                    borderColor: 'rgba(102, 126, 234, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Pourcentage de Progrès (%)',
+                            color: '#333'
+                        },
+                        ticks: {
+                            color: '#555'
+                        },
+                        grid: {
+                            color: '#ddd'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Datasets',
+                            color: '#333'
+                        },
+                        ticks: {
+                            color: '#555'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#333'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+
+</div>
+
+</body>
+</html>

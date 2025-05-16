@@ -6,18 +6,15 @@
     <nav class="sidebar">
         <h2>Admin Panel</h2>
         <ul>
-            <li style="--delay: 0.1s;"><a th:href="@{/admin/dashboard}"><i class="fas fa-tachometer-alt"></i> Tableau de bord</a></li>
-            <li style="--delay: 0.2s;"><a th:href="@{/admin/create-dataset}"><i class="fas fa-plus-circle"></i> Créer un dataset</a></li>
-            <li style="--delay: 0.3s;"><a th:href="@{/admin/annotators}"><i class="fas fa-user-plus"></i> Ajouter un annotateur</a></li>
-            <li style="--delay: 0.4s;"><a th:href="@{/logout}"><i class="fas fa-sign-out-alt"></i> Déconnexion</a></li>
+            <li style="--delay: 0.1s;"><a th:href="@{/admin/dashboard}"><i class="fas fa-tachometer-alt"></i>Dashboard</a></li>
+            <li style="--delay: 0.2s;"><a th:href="@{/admin/datasets}"><i class="fas fa-plus-circle"></i>Datasets</a></li>
+            <li style="--delay: 0.3s;"><a th:href="@{/admin/annotateurs}"><i class="fas fa-user-plus"></i> Annotateurs</a></li>
+            <li style="--delay: 0.4s;"><a th:href="@{/admin/logout}"><i class="fas fa-sign-out-alt"></i> Déconnexion</a></li>
         </ul>
     </nav>
 
     <!-- Contenu principal -->
     <div class="main-content">
-        <header>
-            <h1 th:text="${title} ?: 'Tableau de bord Administrateur'"></h1>
-        </header>
         <!-- Ici sera injecté le contenu du dashboard -->
         <div layout:fragment="content"></div>
     </div>

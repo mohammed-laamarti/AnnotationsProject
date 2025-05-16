@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <title>Tableau de bord de l'Annotateur</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" th:href="@{/css/user.css}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+<div class="annotator-dashboard">
+    <h2>Bienvenue, Annotateur !</h2>
+    <p class="text-muted">Gérez vos tâches d'annotation et suivez votre progression.</p>
+
+    <!-- Messages de succès ou d'erreur -->
+    <div th:if="${successMessage}" class="alert alert-success">
+        <span th:text="${successMessage}"></span>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger">
+        <span th:text="${errorMessage}"></span>
+    </div>
+
+    <!-- Tableau des tâches -->
+    <div class="table-container">
+        <table>
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Dataset</th>
+                <th>Date Limite</th>
+                <th>Avancement</th>
+                <th>Taille</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="task : ${tasks}">
+                <td th:text="${task.id}"></td>
+                <td th:text="${task.dataset.nom} ?: 'Sans nom'"></td>
+                <td th:text="${#dates.format(task.getDateLimite(), 'dd/MM/yyyy')}"></td>
+                <td>
+                    <span th:text="${task.progress} + ' / ' + ${task.size}"></span>
+                    (<span th:text="${task.progressPercentage} + '%'"></span>)
+                </td>
+                <td th:text="${task.size}"></td>
+                <td>
+                    <a th:href="@{/annotateur/task/{id}/work(id=${task.id})}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> Travailler
+                    </a>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(tasks)}">
+                <td colspan="6">Aucune tâche assignée.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>

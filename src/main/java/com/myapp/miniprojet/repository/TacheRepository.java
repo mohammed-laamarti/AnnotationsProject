@@ -10,5 +10,10 @@ import java.util.Optional;
 @Repository
 public interface TacheRepository extends JpaRepository<Tache,Long> {
     List<Tache> findByDatasetId(Long datasetId);
+
     Optional<Tache> findByDatasetIdAndAnnotateurId(Long datasetId, Long annotateurId);
+
+    List<Tache> findByAnnotateurId(Long userId);
+
+    Optional<Tache> findByAnnotateurIdAndDatasetId(long id, Long id1);
 }

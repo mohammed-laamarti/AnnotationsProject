@@ -1,111 +1,344 @@
 package com.myapp.miniprojet.Controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.myapp.miniprojet.dto.AnnotatorDTO;
+import com.myapp.miniprojet.model.*;
+import com.myapp.miniprojet.service.AdminService;
+import com.myapp.miniprojet.service.DataSetService;
+import com.opencsv.exceptions.CsvValidationException;
+import jakarta.servlet.http.HttpSession;
+import org.hibernate.Hibernate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/admin")
 public class AdminController {
 
+    @Autowired
+    private AdminService adminService;
+    @Autowired
+    private DataSetService dataSetService;
+
     @GetMapping("/dashboard")
-    public String dashboard(Model model) {
-        // Définir le titre
-        model.addAttribute("title", "Tableau de bord Administrateur");
+    public String dashboard(Model model) throws JsonProcessingException {
 
-        // Simuler la liste des datasets
-        List<DataSet> datasets = new ArrayList<>();
-        datasets.add(new DataSet(1L, "Dataset 1", "Description du Dataset 1", null, null, null));
-        datasets.add(new DataSet(2L, "Dataset 2", "Description du Dataset 2", null, null, null));
+        model.addAttribute("datasets", dataSetService.getAllDatasets());
+        model.addAttribute("totalAnnotators", adminService.getAllAnnotators().size());
+        model.addAttribute("totalAnnotationsToday", 78);
+        List<Object> progressData = dataSetService.getDatasetProgressData();
+        List<String> datasetNames = (List<String>) progressData.get(0);
+        List<Integer> datasetProgress = (List<Integer>) progressData.get(1);
+        System.out.println(datasetNames);
+        System.out.println(datasetProgress);
+//        model.addAttribute("datasetNames", datasetNames);
+//        model.addAttribute("datasetProgress",  datasetProgress );
+        Map<String, Integer> datasetMap = new HashMap<>();
+        for (int i = 0; i < datasetNames.size(); i++) {
+            datasetMap.put(datasetNames.get(i), datasetProgress.get(i));
+        }
+
+        ObjectMapper mapper = new ObjectMapper();
+        String jsonData = mapper.writeValueAsString(datasetMap); // convert Map to JSON
+
+        model.addAttribute("datasetJson", jsonData);
+        List<Annotateur> topAnnotators = adminService.getTop5Annotators();
+        System.out.println("Top Annotators: " + topAnnotators);
+        model.addAttribute("topAnnotators", topAnnotators);
+        return "admin/dashboard"; // Correspond à a.html
+    }
+    @GetMapping("/datasets")
+    public String datasets(Model model) {
+        // Récupérer les datasets et leurs progrès via DataSetService
+        List<DataSet> datasets = dataSetService.getAllDatasets();
+        Map<Long, Integer> datasetProgress = dataSetService.getDatasetProgressMap();
+
+
+
+        // Ajouter les attributs au modèle
+        model.addAttribute("title", "Gestion des Datasets");
         model.addAttribute("datasets", datasets);
-
-        // Simuler le nombre total d'annotateurs
-        model.addAttribute("totalAnnotators", 5);
-
-        // Simuler le progrès par dataset
-        Map<Long, Integer> datasetProgress = new HashMap<>();
-        datasetProgress.put(1L, 40); // 40% de progrès pour Dataset 1
-        datasetProgress.put(2L, 75); // 75% de progrès pour Dataset 2
         model.addAttribute("datasetProgress", datasetProgress);
 
-        // Simuler la liste des annotateurs
-        List<User> annotators = new ArrayList<>();
-        annotators.add(new User(1L, "Jean", "Dupont", "jean.dupont", "password", new Role()));
-        annotators.add(new User(2L, "Marie", "Durand", "marie.durand", "password", new Role()));
+        return "admin/datasets";
+    }
+    @PostMapping("/dataset/save")
+    public String saveDataset(
+            @RequestParam("nom") String nom,
+            @RequestParam("classe") String classe,
+            @RequestParam("description") String description,
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            Model model) {
+        DataSet dataset = new DataSet();
+        dataset.setNom(nom);
+        dataset.setDescription(description);
+
+        // Traiter les classes possibles
+        if (!classe.isEmpty()) {
+            String[] classes = classe.split(",");
+            for (String className : classes) {
+                className = className.trim();
+                if (!className.isEmpty()) {
+                    ClassePossible classePossible = new ClassePossible();
+                    classePossible.setNom(className);
+                    classePossible.setDataset(dataset);
+                    dataset.getClassesPossibles().add(classePossible);
+                }
+            }
+        }
+
+        try {
+            dataSetService.createDataset(dataset, file);
+            model.addAttribute("successMessage", "Dataset créé avec succès.");
+        } catch (IOException | CsvValidationException e) {
+            model.addAttribute("errorMessage", "Erreur lors de la création : " + e.getMessage());
+        }
+        return "redirect:/admin/datasets";
+    }
+
+
+    @GetMapping("/dataset/details/{id}")
+    public String datasetDetails(@PathVariable Long id, Model model) {
+        DataSet dataset = dataSetService.getAllDatasets().stream()
+                .filter(d -> d.getId().equals(id))
+                .findFirst()
+                .orElse(null);
+        if (dataset == null) {
+            return "redirect:/admin/datasets"; // Rediriger si le dataset n'est pas trouvé
+        }
+
+        System.out.println(dataset.getClassesPossibles());
+
+        // Calculer le pourcentage d'avancement
+        Map<Long, Integer> datasetProgress = dataSetService.getDatasetProgressMap();
+        int progress = datasetProgress.getOrDefault(id, 0);
+
+        model.addAttribute("dataset", dataset);
+        model.addAttribute("progress", progress);
+        model.addAttribute("coupleCount", dataset.getCouplesTextes().size());
+        return "admin/dataset-details";
+    }
+
+//    @GetMapping("/dataset/assign/{id}")
+//    public String assignAnnotators(@PathVariable Long id, Model model) {
+//        DataSet dataset = dataSetService.findDatasetById(id);
+//        if (dataset == null) {
+//            return "redirect:/admin/datasets";
+//        }
+//        System.out.println("Dataset ID passé au modèle : " + dataset.getId());
+//
+//        Map<String, List<Annotateur>> annotatorsMap = dataSetService.getAnnotatorsForAssignment(id);
+//        model.addAttribute("dataset", dataset);
+//        model.addAttribute("assignedAnnotators", annotatorsMap.get("assigned"));
+//        model.addAttribute("availableAnnotators", annotatorsMap.get("available"));
+//        return "admin/dataset-assign";
+//    }
+
+    @PostMapping("/api/dataset/{id}/assign-annotator")
+    public String assignAnnotator(@PathVariable("id") Long datasetId, @RequestParam("annotatorId") Long annotatorId, Model model) {
+
+        try {
+            dataSetService.assignAnnotatorToDataset(datasetId, annotatorId);
+            model.addAttribute("successMessage", "Annotateur affecté avec succès.");
+        } catch (Exception e) {
+            model.addAttribute("errorMessage", "Erreur lors de l'affectation : " + e.getMessage());
+        }
+        return "redirect:/admin/dataset/assign/" + datasetId;
+    }
+
+//    @PostMapping("/api/dataset/{datasetId}/remove-annotator/{annotatorId}")
+//    public String removeAnnotator(@PathVariable Long datasetId, @PathVariable Long annotatorId, Model model) {
+//        System.out.println("---------------------'");
+//        try {
+//            dataSetService.removeAnnotatorFromDataset(datasetId, annotatorId);
+//            model.addAttribute("successMessage", "Annotateur retiré avec succès.");
+//        } catch (Exception e) {
+//            model.addAttribute("errorMessage", "Erreur lors du retrait : " + e.getMessage());
+//        }
+//        return "redirect:/admin/dataset/assign/" + datasetId;
+//    }
+@GetMapping("/dataset/assign/{id}")
+public String showAssignAnnotators(@PathVariable Long id, Model model, HttpSession session) {
+    DataSet dataset = dataSetService.findDatasetById(id);
+    if (dataset == null) {
+        model.addAttribute("errorMessage", "Dataset non trouvé.");
+        return "redirect:/admin/datasets";
+    }
+
+    // Récupérer les annotateurs affectés via les tâches existantes
+    List<Annotateur> assignedAnnotators = dataset.getTaches().stream()
+            .map(Tache::getAnnotateur)
+            .collect(Collectors.toList());
+    System.out.println("Annotateurs affectés : " + assignedAnnotators);
+
+    // Récupérer les annotateurs disponibles
+    List<Annotateur> availableAnnotators = dataSetService.getAvailableAnnotators(dataset.getId());
+    System.out.println("Annotateurs disponibles : " + availableAnnotators);
+
+    // Récupérer la liste des annotateurs sélectionnés depuis la session
+    List<Long> selectedAnnotatorIds = (List<Long>) session.getAttribute("selectedAnnotatorIds");
+    if (selectedAnnotatorIds == null) {
+        selectedAnnotatorIds = new ArrayList<>();
+        session.setAttribute("selectedAnnotatorIds", selectedAnnotatorIds);
+    }
+    System.out.println("IDs des annotateurs sélectionnés : " + selectedAnnotatorIds);
+
+    // Récupérer les annotateurs correspondants aux selectedAnnotatorIds
+    List<Annotateur> selectedAnnotators = selectedAnnotatorIds.stream()
+            .map(annotatorId -> {
+                Annotateur annotator = dataSetService.findAnnotatorById(annotatorId);
+                System.out.println("Recherche annotateur ID " + annotatorId + " : " + annotator);
+                return annotator;
+            })
+            .filter(annotator -> annotator != null) // Filtrer les annotateurs non trouvés
+            .collect(Collectors.toList());
+    System.out.println("Annotateurs sélectionnés : " + selectedAnnotators);
+
+    // Ajouter les attributs au modèle
+    model.addAttribute("dataset", dataset);
+    model.addAttribute("assignedAnnotators", assignedAnnotators);
+    model.addAttribute("availableAnnotators", availableAnnotators);
+    model.addAttribute("selectedAnnotators", selectedAnnotators);
+    model.addAttribute("selectedAnnotatorIds", selectedAnnotatorIds);
+
+    return "admin/dataset-assign";
+}
+
+    @PostMapping("/dataset/assign/{id}/add")
+    public String addAnnotator(@PathVariable Long id, @RequestParam Long annotatorId, Model model, HttpSession session) {
+        DataSet dataset = dataSetService.findDatasetById(id);
+        if (dataset == null) {
+            model.addAttribute("errorMessage", "Dataset non trouvé.");
+            return "redirect:/admin/datasets";
+        }
+
+        Annotateur annotator = dataSetService.findAnnotatorById(annotatorId);
+        System.out.println("Annotateur trouvé : " + annotator);
+        if (annotator == null) {
+            model.addAttribute("errorMessage", "Annotateur non trouvé avec l'ID : " + annotatorId);
+            return "redirect:/admin/dataset/assign/" + id;
+        }
+
+        // Utiliser la session pour stocker les annotateurs sélectionnés
+        List<Long> selectedAnnotatorIds = (List<Long>) session.getAttribute("selectedAnnotatorIds");
+        if (selectedAnnotatorIds == null) {
+            selectedAnnotatorIds = new ArrayList<>();
+            session.setAttribute("selectedAnnotatorIds", selectedAnnotatorIds);
+        }
+        if (!selectedAnnotatorIds.contains(annotatorId)) {
+            selectedAnnotatorIds.add(annotatorId);
+            System.out.println("Annotateur ajouté : " + annotatorId);
+        }
+
+        return "redirect:/admin/dataset/assign/" + id;
+    }
+
+    @PostMapping("/dataset/assign/{id}/remove")
+    public String removeAnnotator(@PathVariable Long id, @RequestParam Long annotatorId, Model model, HttpSession session) {
+        DataSet dataset = dataSetService.findDatasetById(id);
+        if (dataset == null) {
+            model.addAttribute("errorMessage", "Dataset non trouvé.");
+            return "redirect:/admin/datasets";
+        }
+
+        dataSetService.removeAnnotatorFromDataset(dataset.getId(), annotatorId);
+        List<Long> selectedAnnotatorIds = (List<Long>) session.getAttribute("selectedAnnotatorIds");
+        if (selectedAnnotatorIds != null) {
+            selectedAnnotatorIds.remove(annotatorId);
+        }
+        return "redirect:/admin/dataset/assign/" + id;
+    }
+
+
+//    @PostMapping("/dataset/assign/{id}/remove")
+//    public String removeAnnotator(@PathVariable Long id, @RequestParam Long annotatorId, Model model) {
+//        DataSet dataset = dataSetService.findDatasetById(id);
+//        if (dataset == null) {
+//            model.addAttribute("errorMessage", "Dataset non trouvé.");
+//            return "redirect:/admin/datasets";
+//        }
+//
+//        // Supprimer la tâche de l'annotateur sans toucher aux annotations
+//        dataSetService.removeAnnotatorFromDataset(dataset.getId(), annotatorId);
+//        return "redirect:/admin/dataset/assign/" + id;
+//    }
+
+    @PostMapping("/dataset/assign/{id}/distribute")
+    public String distributeTasks(@PathVariable Long id, Model model, HttpSession session) {
+        DataSet dataset = dataSetService.findDatasetById(id);
+        if (dataset == null) {
+            model.addAttribute("errorMessage", "Dataset non trouvé.");
+            return "redirect:/admin/datasets";
+        }
+
+        List<Long> selectedAnnotatorIds = (List<Long>) session.getAttribute("selectedAnnotatorIds");
+        if (selectedAnnotatorIds != null && !selectedAnnotatorIds.isEmpty()) {
+            dataSetService.distributeTasksToAnnotators(dataset, selectedAnnotatorIds);
+            model.addAttribute("successMessage", "Tâches réparties avec succès.");
+            session.setAttribute("selectedAnnotatorIds", new ArrayList<>());
+        } else {
+            model.addAttribute("errorMessage", "Aucun annotateur sélectionné pour la répartition.");
+        }
+        return "redirect:/admin/dataset/assign/" + id;
+    }
+
+//    annotateurs
+
+    @GetMapping("/annotateurs")
+    public String annotators(Model model) {
+        List<Annotateur> annotators = adminService.getAllAnnotators();
         model.addAttribute("annotators", annotators);
-
-        // Simuler la liste des classes
-        List<String> classes = new ArrayList<>();
-        classes.add("Class 1");
-        classes.add("Class 2");
-        classes.add("Class 3");
-        model.addAttribute("classes", classes);
-
-        // Ajouter un message de simulation
-        model.addAttribute("message", "simo");
-
-        // Retourner le template
-        return "admin/a"; // Correspond à a.html
-    }
-}
-
-// Classes simulées
-class DataSet {
-    private Long id;
-    private String nom;
-    private String description;
-    private String field1;
-    private String field2;
-    private String field3;
-
-    public DataSet() {}
-
-    public DataSet(Long id, String nom, String description, String field1, String field2, String field3) {
-        this.id = id;
-        this.nom = nom;
-        this.description = description;
-        this.field1 = field1;
-        this.field2 = field2;
-        this.field3 = field3;
+        return "admin/annotateurs";
     }
 
-    public Long getId() { return id; }
-    public String getNom() { return nom; }
-    public String getDescription() { return description; }
-}
-
-class User {
-    private Long id;
-    private String prenom;
-    private String nom;
-    private String login;
-    private String password;
-    private Role role;
-
-    public User() {}
-
-    public User(Long id, String prenom, String nom, String login, String password, Role role) {
-        this.id = id;
-        this.prenom = prenom;
-        this.nom = nom;
-        this.login = login;
-        this.password = password;
-        this.role = role;
+    @GetMapping("/annotator/{id}")
+    @ResponseBody
+    public ResponseEntity<AnnotatorDTO> getAnnotatorById(@PathVariable Long id) {
+        try {
+            AnnotatorDTO annotator = adminService.getAnnotatorById(id);
+            return ResponseEntity.ok(annotator);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(null);
+        }
     }
 
-    public Long getId() { return id; }
-    public String getPrenom() { return prenom; }
-    public String getNom() { return nom; }
-    public String getLogin() { return login; }
-    public String getPassword() { return password; }
+    @PostMapping("/annotator/save")
+    @ResponseBody
+    public String saveAnnotator(@RequestBody Annotateur annotator) {
+        System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        System.out.println(annotator);
+        adminService.addAnnotator(annotator);
+        return "admin/annotateurs";
+    }
+//
+    @PutMapping("/annotator/update/{id}")
+    @ResponseBody
+    public String updateAnnotator(@PathVariable Long id, @RequestBody User updatedAnnotator) {
+        System.out.println("||||||||||||||||||||||||||||||||");
+     adminService.updateAnnotator(id,updatedAnnotator);
+        return "redirect:/admin/annotateurs";
+    }
+
+    @DeleteMapping("/annotator/delete/{id}")
+    @ResponseBody
+    public String deleteAnnotator(@PathVariable Long id) {
+        adminService.deleteAnnotator(id);
+        return "admin/annotateurs";
+    }
+@GetMapping("/logout")
+public String logout(HttpSession session) {
+    session.invalidate(); // Invalide la session
+    return "redirect:/auth/login"; // Redirige vers une page de login (à créer si nécessaire)
 }
 
-class Role {
-    // Classe vide pour la simulation (à remplacer par une entité réelle plus tard)
 }
+

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/layout}">
+<head>
+    <title>Dashboard Admin</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<!--    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">-->
+</head>
+<body>
+<div layout:fragment="content" >
+    <h2 class="text-2xl font-semibold mb-4" style="color: var(--text-color); margin-bottom: var(--margin-element);">Gestion des Datasets</h2>
+
+    <!-- Bouton pour ouvrir la pop-up -->
+    <div class="mb-10" style="margin-bottom: 2.5rem;">
+        <button id="openModalBtn" class="btn btn-primary flex items-center mb-6">
+            <i class="fas fa-plus mr-2"></i> Créer un nouveau dataset
+        </button>
+    </div>
+
+    <!-- Liste des datasets -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div th:each="dataset : ${datasets}" class="card">
+            <h3 th:text="${dataset.nom} ?: 'Sans nom'"></h3>
+            <p>
+                <span style="color: var(--text-color);">Pourcentage d'avancement : </span>
+                <span th:text="${datasetProgress[dataset.id] != null} ? ${datasetProgress[dataset.id]} + '%' : '0%'"
+                      style="color: var(--text-light);"></span>
+            </p>
+            <div class="mb-2">
+                <div class="w-full bg-gray-200 rounded-full h-2.5" style="background-color: var(--input-border); border-radius: var(--border-radius);">
+                    <div class="bg-primary h-2.5 rounded-full" th:style="'width: ' + (${datasetProgress[dataset.id]} != null ? datasetProgress[dataset.id] : 0) "></div>
+                </div>
+            </div>
+            <div class="flex justify-between mt-4">
+                <a th:href="@{/admin/dataset/details/{id}(id=${dataset.id})}" class="btn btn-primary">Afficher les détails</a>
+                <a th:href="@{/admin/dataset/assign/{id}(id=${dataset.id})}" class="btn btn-secondary">Affecter des annotateurs</a>
+            </div>
+        </div>
+        <div th:if="${#lists.isEmpty(datasets)}" class="card text-center">
+            <p style="color: var(--text-light);">Aucun dataset disponible</p>
+        </div>
+    </div>
+
+    <!-- Pop-up (modal) pour créer un dataset -->
+    <div id="createDatasetModal" class="modal">
+        <div class="modal-content">
+            <span class="close">×</span>
+            <h2 class="text-xl font-semibold mb-4" style="color: var(--text-color);">Créer un nouveau dataset</h2>
+            <form id="createDatasetForm" method="post" enctype="multipart/form-data">
+                <div class="modal-form-group">
+                    <label for="nom">Nom :</label>
+                    <input type="text" id="nom" name="nom" required>
+                </div>
+
+                <div class="modal-form-group">
+                    <label for="classe">Classe :</label>
+                    <input type="text" id="classe" name="classe" required>
+                </div>
+
+                <div class="modal-form-group">
+                    <label for="description">Description :</label>
+                    <textarea id="description" name="description" rows="4" required></textarea>
+                </div>
+
+                <div class="modal-form-group">
+                    <label for="file">Importer un fichier :</label>
+                    <input type="file" id="file" name="file">
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-modal cancel close">
+                         <i class="fas fa-times"></i>
+                    </button>
+                    <button type="submit" class="btn-modal create">
+                        <i class="fas fa-plus"></i> Créer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript pour gérer la pop-up et la soumission -->
+    <script>
+        // Gestion de la pop-up
+        const modal = document.getElementById("createDatasetModal");
+        const openModalBtn = document.getElementById("openModalBtn");
+        const closeModalBtns = document.getElementsByClassName("close");
+
+        openModalBtn.onclick = function() {
+            modal.style.display = "flex";
+        }
+
+        for (let closeBtn of closeModalBtns) {
+            closeBtn.onclick = function() {
+                modal.style.display = "none";
+            }
+        }
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        // Gestion de la soumission du formulaire via AJAX
+        document.getElementById("createDatasetForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+
+            fetch("/admin/dataset/save", {
+                method: "POST",
+                body: formData
+            })
+                .then(response => {
+                    if (response.ok) {
+                        modal.style.display = "none";
+                        location.reload(); // Recharge la page pour afficher le nouveau dataset
+                    } else {
+                        alert("Erreur lors de la création du dataset.");
+                    }
+                })
+                .catch(error => {
+                    console.error("Erreur:", error);
+                    alert("Une erreur est survenue.");
+                });
+        });
+    </script>
+</div>
+</body>
+</html>

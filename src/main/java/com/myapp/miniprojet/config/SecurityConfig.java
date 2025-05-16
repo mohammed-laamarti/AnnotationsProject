@@ -42,7 +42,7 @@ public class SecurityConfig {
                         .permitAll()
                 )
                 .userDetailsService(userDetailsService)
-                .csrf(Customizer.withDefaults());
+                .csrf(csrf -> csrf.disable());
 
         return http.build();
     }

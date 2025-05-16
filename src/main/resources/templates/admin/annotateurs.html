@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/layout}">
+<head>
+    <title>Gestion des Annotateurs</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div layout:fragment="content">
+    <h2 class="text-2xl font-semibold mb-4" style="color: var(--text-color); margin-bottom: var(--margin-element);">Gestion des Annotateurs</h2>
+
+    <!-- Bouton pour ouvrir la pop-up d'ajout -->
+    <div class="mb-10" style="margin-bottom: 2rem;">
+        <button id="openAddModalBtn" class="btn btn-primary flex items-center">
+            <i class="fas fa-plus mr-2"></i> Ajouter un annotateur
+        </button>
+    </div>
+
+    <!-- Liste des annotateurs -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div th:each="annotator : ${annotators}" class="card">
+            <div class="annotator-row">
+                <span class="annotator-name" th:text="${annotator.nom} + ' ' + ${annotator.prenom} + ' (' + ${annotator.login} + ')' ?: 'Sans nom'"></span>
+                <div class="annotator-actions">
+                    <button th:attr="data-id=${annotator.id}" class="btn btn-modal edit edit-annotator">
+                        <i class="fas fa-edit mr-2"></i> Modifier
+                    </button>
+                    <button th:attr="data-id=${annotator.id}" class="btn btn-modal delete delete-annotator">
+                        <i class="fas fa-trash mr-2"></i> Supprimer
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div th:if="${#lists.isEmpty(annotators)}" class="card text-center">
+            <p style="color: var(--text-light);">Aucun annotateur disponible</p>
+        </div>
+    </div>
+
+    <!-- Pop-up pour ajouter/modifier un annotateur -->
+    <div id="annotatorModal" class="modal">
+        <div class="modal-content">
+            <span class="close">×</span>
+            <h2 id="modalTitle" class="text-xl font-semibold mb-4" style="color: var(--text-color);">Ajouter un annotateur</h2>
+            <form id="annotatorForm" method="post">
+                <input type="hidden" id="annotatorId" name="id">
+                <div class="modal-form-group">
+                    <label for="prenom">Prénom :</label>
+                    <input type="text" id="prenom" name="prenom" required>
+                </div>
+                <div class="modal-form-group">
+                    <label for="nom">Nom :</label>
+                    <input type="text" id="nom" name="nom" required>
+                </div>
+                <div class="modal-form-group">
+                    <label for="username">Login :</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn-modal save">
+                        <i class="fas fa-save"></i> Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript pour gérer la pop-up et les actions -->
+    <script>
+        const modal = document.getElementById("annotatorModal");
+        const openAddModalBtn = document.getElementById("openAddModalBtn");
+        const closeModalBtn = document.getElementsByClassName("close")[0];
+        const modalTitle = document.getElementById("modalTitle");
+        const annotatorForm = document.getElementById("annotatorForm");
+        const annotatorIdInput = document.getElementById("annotatorId");
+        const prenomInput = document.getElementById("prenom");
+        const nomInput = document.getElementById("nom");
+        const usernameInput = document.getElementById("username");
+
+        // Ouvrir la pop-up pour ajouter
+        openAddModalBtn.onclick = function() {
+            modalTitle.textContent = "Ajouter un annotateur";
+            annotatorIdInput.value = "";
+            prenomInput.value = "";
+            nomInput.value = "";
+            usernameInput.value = "";
+            modal.style.display = "flex";
+        }
+
+        // Fermer la pop-up
+        closeModalBtn.onclick = function() {
+            modal.style.display = "none";
+        }
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        // Gérer le clic sur "Modifier"
+        document.querySelectorAll(".edit-annotator").forEach(button => {
+            button.onclick = function() {
+                const id = this.getAttribute("data-id");
+                modalTitle.textContent = "Modifier un annotateur";
+                fetch(`/admin/annotator/${id}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        annotatorIdInput.value = data.id;
+                        prenomInput.value = data.prenom;
+                        nomInput.value = data.nom;
+                        usernameInput.value = data.login;
+                        modal.style.display = "flex";
+                    })
+                    .catch(error => {
+                        console.error("Erreur:", error);
+                        console.log(data);
+                        alert("Erreur lors de la récupération des données.");
+                    });
+            }
+        });
+
+        // Gérer le clic sur "Supprimer"
+        document.querySelectorAll(".delete-annotator").forEach(button => {
+            button.onclick = function() {
+                const id = this.getAttribute("data-id");
+                if (confirm("Êtes-vous sûr de vouloir supprimer cet annotateur ?")) {
+                    fetch(`/admin/annotator/delete/${id}`, {
+                        method: "DELETE"
+                    })
+                        .then(response => {
+                            if (response.ok) {
+                                location.reload();
+                            } else {
+                                alert("Erreur lors de la suppression.");
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Erreur:", error);
+                            alert("Une erreur est survenue.");
+                        });
+                }
+            }
+        });
+
+        // Gérer la soumission du formulaire
+        annotatorForm.addEventListener("submit", function(event) {
+            event.preventDefault();
+            const id = annotatorIdInput.value;
+            const method = id ? "PUT" : "POST";
+            const url = id ? `/admin/annotator/update/${id}` : "/admin/annotator/save";
+            const data = {
+                id: id,
+                prenom: prenomInput.value,
+                nom: nomInput.value,
+                login: usernameInput.value
+            };
+
+            fetch(url, {
+                method: method,
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => response.text()) // Récupérer le texte de la réponse
+                .then(text => {
+                    if (text.startsWith("Annotateur")) { // Vérifier si la réponse indique un succès
+                        modal.style.display = "none";
+                        location.reload();
+                    } else {
+                        // alert(text); // Afficher l'erreur si présente
+                    }
+                })
+                .catch(error => {
+                    console.error("Erreur:", error);
+                    alert("Une erreur est survenue.");
+                });
+        });
+    </script>
+</div>
+</body>
+</html>

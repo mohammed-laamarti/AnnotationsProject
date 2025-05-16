@@ -21,6 +21,16 @@ public class Tache {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "annotateur_id")
     private Annotateur annotateur;
+    private int progress;          // Ajouté pour correspondre à la vue
+    private int size;              // Ajouté pour correspondre à la vue
+    private int progressPercentage;
+    @Override
+    public String toString() {
+        return "Tache{" +
+                "id=" + id +
+                ", dateLimite=" + dateLimite +
+                '}';
+    }
 
     public Annotateur getAnnotateur() {
         return annotateur;
@@ -52,5 +62,37 @@ public class Tache {
 
     public void setDateLimite(Date dateLimite) {
         this.dateLimite = dateLimite;
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public int getProgressPercentage() {
+        return progressPercentage;
+    }
+
+    public void setProgressPercentage(int progressPercentage) {
+        this.progressPercentage = progressPercentage;
+    }
+
+    public int getSize() {
+        return size;
+    }
+
+    public void setSize(int size) {
+        this.size = size;
+    }
+
+    public int getProgress() {
+        return progress;
+    }
+
+    public void setProgress(int progress) {
+        this.progress = progress;
     }
 }

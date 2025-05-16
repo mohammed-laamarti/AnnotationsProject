@@ -11,7 +11,6 @@ public class MiniProjetApplication {
     public static void main(String[] args) {
 
         SpringApplication.run(MiniProjetApplication.class, args);
-
     }
 
 

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/layout}">
+<head>
+    <title>Détails du Dataset</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- DataTables CSS et JS pour la pagination -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+</head>
+<body>
+<div layout:fragment="content">
+    <h2 class="text-2xl font-semibold mb-4" style="color: var(--text-color);">Détails du Dataset</h2>
+
+    <div class="card">
+        <h3 th:text="${dataset.nom} ?: 'Sans nom'"></h3>
+        <p><strong>Description :</strong> <span th:text="${dataset.description} ?: 'Aucune description'"></span></p>
+        <p><strong>Nombre de couples :</strong> <span th:text="${coupleCount}"></span></p>
+        <p><strong>Avancement :</strong> <span th:text="${progress} + '%'"></span></p>
+        <p><strong>Classes possibles :</strong>
+            <span th:each="classe : ${dataset.classesPossibles}" th:text="' ' + ${classe.nom}"></span>
+            <span th:if="${#lists.isEmpty(dataset.classesPossibles)}">(Aucune classe)</span>
+        </p>
+    </div>
+
+    <div class="mt-6">
+        <h3 class="text-xl font-semibold mb-2" style="color: var(--text-color);">Liste des couples de textes</h3>
+        <table id="couplesTable" class="display" style="width:100%">
+            <thead>
+            <tr>
+                <th>id</th>
+                <th>Texte 1</th>
+                <th>Texte 2</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="couple, iterStat : ${dataset.couplesTextes}">
+                <td th:text="${couple.id}"></td>
+                <td th:text="${couple.texte1}"></td>
+                <td th:text="${couple.texte2}"></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script th:inline="none">
+        $(document).ready(function () {
+            $('#couplesTable').DataTable({
+                "pageLength": 5,
+                "lengthMenu": [[5, 10, 25, 50], [5, 10, 25, 50]],
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/French.json"
+                }
+            });
+        });
+    </script>
+</div>
+</body>
+</html>
