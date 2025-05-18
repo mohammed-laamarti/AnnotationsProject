@@ -559,6 +559,19 @@ body {
     color: var(--white) !important;
     border-color: var(--secondary-color);
 }
+.btn-export {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #28a745;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    margin-top: 20px;
+    text-align: center;
+}
+.btn-export:hover {
+    background-color: #218838;
+}
 
 /* Styles spécifiques pour assign-annotators.html */
 .assign-annotators .table-container table {

@@ -13,8 +13,10 @@
     <div class="card">
         <h3 th:text="${dataset.nom}"></h3>
         <p><strong>Description :</strong> <span th:text="${dataset.description}"></span></p>
-        <p><strong>Nombre de couples :</strong> <span th:text="${#lists.size(dataset.couplesTextes)}"></span></p>
-        <a th:href="@{/admin/datasets}" class="btn btn-secondary">Retour aux détails</a>
+        <p><strong>Nombre de couples disponibles :</strong>
+            <span th:text="${#lists.size(dataset.couplesTextes)}"></span>
+        </p>
+        <a th:href="@{/admin/datasets}" class="btn btn-secondary">Retour aux datasets</a>
     </div>
 
     <h3>Annotateurs affectés</h3>
@@ -99,7 +101,10 @@
             </tbody>
         </table>
         <form th:action="@{/admin/dataset/assign/{id}/distribute(id=${dataset.id})}" method="post">
-            <button type="submit" class="btn btn-success">Valider la répartition</button>
+            <button type="submit" class="btn btn-success"
+                    th:disabled="${#lists.isEmpty(selectedAnnotators) or #lists.isEmpty(dataset.couplesTextes)}">
+                Valider la répartition
+            </button>
         </form>
     </div>
 

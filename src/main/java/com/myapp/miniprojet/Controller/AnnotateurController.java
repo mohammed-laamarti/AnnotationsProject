@@ -79,16 +79,18 @@ public class AnnotateurController {
     @PostMapping("/task/{id}/work")
     public String saveAnnotation(@PathVariable Long id, @RequestParam("annotation") String annotation,
                                  @RequestParam("index") int index, Model model, Principal principal) {
+        System.out.println("-------------------------------------");
         try {
             String login = principal.getName();
             Long userId = userDetailsService.getUserByLogin(login).getId();
             Tache task = annotateurService.getTaskById(id);
             if (task == null || !(task.getAnnotateur().getId()==userId)) {
                 model.addAttribute("errorMessage", "Tâche introuvable ou non assignée à cet annotateur.");
-                return "annotateur/acceuil";
+                return "annotateur/accueil";
             }
 
-            annotateurService.saveAnnotation(id, index, annotation, userId);
+            // Sauvegarder l'annotation et vérifier si la tâche est terminée
+            boolean isTaskCompleted = annotateurService.saveAnnotation(id, index, annotation, userId);
 
             List<CoupleTexte> couples = task.getCouplesTextes();
             if (index + 1 < couples.size()) {
@@ -102,14 +104,20 @@ public class AnnotateurController {
                 model.addAttribute("successMessage", "Annotation sauvegardée avec succès.");
                 return "annotateur/work";
             } else {
-                model.addAttribute("successMessage", "Toutes les annotations sont terminées.");
-                return "redirect:/annotateur/acceuil";
+                // Vérifier si la tâche est terminée
+                if (isTaskCompleted) {
+                    annotateurService.markTaskAsCompleted(id, userId);
+                    model.addAttribute("successMessage", "Félicitations ! Vous avez terminé toutes les annotations de cette tâche.");
+                } else {
+                    model.addAttribute("errorMessage", "Certaines annotations sont manquantes. Veuillez vérifier.");
+                }
+                return "redirect:/annotateur/accueil";
             }
         } catch (Exception e) {
             System.err.println("Erreur dans saveAnnotation: " + e.getMessage());
             e.printStackTrace();
             model.addAttribute("errorMessage", "Une erreur est survenue : " + e.getMessage());
-            return "annotateur/acceuil";
+            return "annotateur/accueil";
         }
     }
 }

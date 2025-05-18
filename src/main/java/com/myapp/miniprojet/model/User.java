@@ -29,6 +29,7 @@ public class User implements UserDetails {
     @Column(unique = true)
     @NotBlank(message = "Le mot de passe est obligatoire")
     private String password;
+    private boolean deleted = false;
     @NotNull(message = "Le rôle est obligatoire")
     @ManyToOne
     @JoinColumn(name = "role_id")
@@ -116,5 +117,11 @@ public class User implements UserDetails {
         this.nom = nom;
     }
 
+    public boolean isDeleted() {
+        return deleted;
+    }
 
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
+    }
 }

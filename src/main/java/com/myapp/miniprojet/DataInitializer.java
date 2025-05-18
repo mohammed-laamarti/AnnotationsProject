@@ -33,7 +33,7 @@ public class DataInitializer implements CommandLineRunner {
         initRoles();
         initAdminUser();
         initAnnotateurs();
-        initDatasets();
+//        initDatasets();
     }
 
     private void initRoles() {

@@ -10,6 +10,8 @@ import com.opencsv.exceptions.CsvValidationException;
 import jakarta.servlet.http.HttpSession;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -122,11 +124,16 @@ public class AdminController {
         Map<Long, Integer> datasetProgress = dataSetService.getDatasetProgressMap();
         int progress = datasetProgress.getOrDefault(id, 0);
 
+        // Récupérer les annotateurs affectés
+        java.util.List<com.myapp.miniprojet.model.Annotateur> annotateurs = dataSetService.getAnnotateursForDataset(id);
+
         model.addAttribute("dataset", dataset);
         model.addAttribute("progress", progress);
         model.addAttribute("coupleCount", dataset.getCouplesTextes().size());
+        model.addAttribute("annotateurs", annotateurs);
         return "admin/dataset-details";
     }
+
 
 //    @GetMapping("/dataset/assign/{id}")
 //    public String assignAnnotators(@PathVariable Long id, Model model) {
@@ -228,7 +235,6 @@ public String showAssignAnnotators(@PathVariable Long id, Model model, HttpSessi
             return "redirect:/admin/dataset/assign/" + id;
         }
 
-        // Utiliser la session pour stocker les annotateurs sélectionnés
         List<Long> selectedAnnotatorIds = (List<Long>) session.getAttribute("selectedAnnotatorIds");
         if (selectedAnnotatorIds == null) {
             selectedAnnotatorIds = new ArrayList<>();
@@ -237,6 +243,7 @@ public String showAssignAnnotators(@PathVariable Long id, Model model, HttpSessi
         if (!selectedAnnotatorIds.contains(annotatorId)) {
             selectedAnnotatorIds.add(annotatorId);
             System.out.println("Annotateur ajouté : " + annotatorId);
+            dataSetService.assignAnnotatorToDataset(id, annotatorId);
         }
 
         return "redirect:/admin/dataset/assign/" + id;
@@ -280,6 +287,11 @@ public String showAssignAnnotators(@PathVariable Long id, Model model, HttpSessi
             return "redirect:/admin/datasets";
         }
 
+        if (dataset.getCouplesTextes().isEmpty()) {
+            model.addAttribute("errorMessage", "Aucun couple de textes disponible à répartir.");
+            return "redirect:/admin/dataset/assign/" + id;
+        }
+
         List<Long> selectedAnnotatorIds = (List<Long>) session.getAttribute("selectedAnnotatorIds");
         if (selectedAnnotatorIds != null && !selectedAnnotatorIds.isEmpty()) {
             dataSetService.distributeTasksToAnnotators(dataset, selectedAnnotatorIds);
@@ -289,6 +301,20 @@ public String showAssignAnnotators(@PathVariable Long id, Model model, HttpSessi
             model.addAttribute("errorMessage", "Aucun annotateur sélectionné pour la répartition.");
         }
         return "redirect:/admin/dataset/assign/" + id;
+    }
+
+    @GetMapping("/dataset/export/{id}")
+    public ResponseEntity<byte[]> exportDataset(@PathVariable Long id) throws Exception {
+        String csvContent = dataSetService.exportAnnotatedDataset(id);
+
+        // Préparer le fichier pour le téléchargement
+        byte[] csvBytes = csvContent.getBytes();
+        String fileName = "dataset_annotated_" + id + ".csv";
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(csvBytes);
     }
 
 //    annotateurs
@@ -330,9 +356,14 @@ public String showAssignAnnotators(@PathVariable Long id, Model model, HttpSessi
 
     @DeleteMapping("/annotator/delete/{id}")
     @ResponseBody
-    public String deleteAnnotator(@PathVariable Long id) {
-        adminService.deleteAnnotator(id);
-        return "admin/annotateurs";
+    public String deleteAnnotator(@PathVariable Long id, Model model) {
+        try {
+            adminService.deleteAnnotator(id);
+            model.addAttribute("successMessage", "L'annotateur a été marqué comme supprimé avec succès.");
+        } catch (IllegalArgumentException e) {
+            model.addAttribute("errorMessage", e.getMessage());
+        }
+        return "admin/annotateurs"; // Retourne la vue avec les messages
     }
 @GetMapping("/logout")
 public String logout(HttpSession session) {

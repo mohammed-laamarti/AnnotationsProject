@@ -19,6 +19,7 @@
     --border-radius: 8px;
 }
 
+/* Styles généraux pour le corps et les éléments communs */
 body {
     font-family: 'Poppins', sans-serif;
     background-color: #f4f7fa;
@@ -26,29 +27,15 @@ body {
     padding: 0;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     min-height: 100vh;
-}
-
-.annotator-dashboard {
-    width: 90%;
-    max-width: 1200px;
-    background: var(--white);
-    padding: var(--padding-container);
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow);
-    text-align: center;
 }
 
 h2 {
     color: var(--text-color);
     margin-bottom: var(--margin-element);
     font-weight: 600;
-}
-
-.text-muted {
-    color: var(--text-light);
-    margin-bottom: var(--margin-element);
+    font-size: 2rem;
 }
 
 .alert {
@@ -56,6 +43,7 @@ h2 {
     margin-bottom: var(--margin-element);
     border-radius: var(--border-radius);
     text-align: left;
+    font-size: 1rem;
 }
 
 .alert-success {
@@ -70,69 +58,224 @@ h2 {
     border: 1px solid #f5c6cb;
 }
 
-.table-container {
-    overflow-x: auto;
+.btn {
+    padding: var(--input-padding);
+    background-color: var(--primary-color);
+    color: var(--white);
+    text-decoration: none;
+    border-radius: var(--border-radius);
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    transition: var(--transition);
+    display: inline-block;
+    text-align: center;
+    min-width: 100px;
 }
 
-table {
+.btn:hover {
+    background-color: var(--secondary-color);
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+.btn.disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 20px;
+    background-color: #e9ecef;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+.progress {
+    height: 100%;
+    background-color: var(--primary-color);
+    border-radius: var(--border-radius);
+    transition: width 0.3s ease;
+    text-align: right;
+    padding-right: 10px;
+    color: var(--white);
+    font-size: 0.9rem;
+}
+
+/* Styles spécifiques pour index.html (Accueil Annotateur) */
+.annotator-dashboard {
+    width: 90%;
+    max-width: 1200px;
+    background: var(--white);
+    padding: var(--padding-container);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    text-align: center;
+    margin-top: calc(var(--padding-container) * 2);
+}
+
+.annotator-dashboard .text-muted {
+    color: var(--text-light);
+    margin-bottom: var(--margin-element);
+    font-size: 1.1rem;
+}
+
+.annotator-dashboard .table-container {
+    overflow-x: auto;
+    margin-bottom: var(--margin-element);
+}
+
+.annotator-dashboard table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: var(--margin-element);
+    margin-top: 0;
+    background-color: var(--white);
 }
 
-th, td {
+.annotator-dashboard th,
+.annotator-dashboard td {
     padding: 12px;
     text-align: left;
     border-bottom: 1px solid var(--input-border);
 }
 
-th {
+.annotator-dashboard th {
     background-color: var(--primary-color);
     color: var(--white);
     font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-td {
+.annotator-dashboard td {
     color: var(--text-color);
+    vertical-align: middle;
 }
 
-tr:hover {
+.annotator-dashboard tr:hover {
     background-color: #f5f6fa;
     transition: var(--transition);
 }
 
-.btn {
-    display: inline-block;
-    padding: var(--input-padding);
-    text-decoration: none;
-    color: var(--white);
-    border-radius: var(--border-radius);
-    transition: var(--transition);
-}
-
-.btn-primary {
-    background-color: var(--primary-color);
-}
-
-.btn-primary:hover {
-    background-color: var(--secondary-color);
-}
-
-.btn i {
-    margin-right: 5px;
-}
-
-tr td:last-child {
+.annotator-dashboard tr td:last-child {
     text-align: center;
 }
 
+/* Styles spécifiques pour work.html (Travailler sur la tâche) */
+.work-container {
+    width: 90%;
+    max-width: 800px;
+    background: var(--white);
+    padding: var(--padding-container);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    text-align: center;
+    margin-top: calc(var(--padding-container) * 2);
+}
+
+.work-container .task-details,
+.work-container .annotation-form {
+    margin-bottom: var(--margin-element);
+    text-align: left;
+    padding: 20px;
+    background-color: #f9fbfd;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--input-border);
+}
+
+.work-container .task-details p {
+    margin: 10px 0;
+    color: var(--text-light);
+}
+
+.work-container .input-group {
+    margin: var(--margin-element) 0;
+    text-align: left;
+}
+
+.work-container .input-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.work-container input[type="text"] {
+    padding: var(--input-padding);
+    width: 100%;
+    max-width: 600px;
+    border: 1px solid var(--input-border);
+    border-radius: var(--border-radius);
+    box-sizing: border-box;
+    background-color: #fff;
+    font-size: 1rem;
+    transition: var(--transition);
+}
+
+.work-container input[type="text"]:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+}
+
+.work-container .radio-group {
+    margin: 10px 0;
+}
+
+.work-container .radio-group label {
+    margin-left: 5px;
+    margin-right: 20px;
+    color: var(--text-color);
+    font-size: 1rem;
+}
+
+.work-container input[type="radio"] {
+    margin-right: 8px;
+    accent-color: var(--primary-color);
+}
+
+.work-container .button-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: var(--margin-element);
+}
+
+/* Media queries pour la responsivité */
 @media (max-width: 768px) {
-    .annotator-dashboard {
+    .annotator-dashboard,
+    .work-container {
         width: 95%;
         padding: calc(var(--padding-container) / 1.5);
+        margin-top: calc(var(--padding-container) * 1.5);
     }
-    th, td {
+
+    .annotator-dashboard th,
+    .annotator-dashboard td {
         font-size: 14px;
         padding: 8px;
+    }
+
+    .annotator-dashboard h2,
+    .work-container h2 {
+        font-size: 1.5rem;
+    }
+
+    .annotator-dashboard .text-muted {
+        font-size: 1rem;
+    }
+
+    .work-container .btn {
+        padding: calc(var(--input-padding) / 1.2);
+        min-width: 80px;
     }
 }

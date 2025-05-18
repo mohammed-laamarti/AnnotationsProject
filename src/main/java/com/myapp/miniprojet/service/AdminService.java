@@ -61,6 +61,19 @@ public class AdminService {
 
         userRepository.save(existingAnnotator);
     }
+//    @Transactional
+//    public void deleteAnnotator(Long id) {
+//        Optional<User> annotatorOptional = userRepository.findById(id);
+//        if (!annotatorOptional.isPresent()) {
+//            throw new IllegalArgumentException("Annotateur non trouvé avec l'ID : " + id);
+//        }
+//        User annotator = annotatorOptional.get();
+//        if (!(annotator instanceof Annotateur)) {
+//            throw new IllegalArgumentException("L'utilisateur avec l'ID " + id + " n'est pas un annotateur.");
+//        }
+//        // Supprimer l'annotateur de la base de données
+//        userRepository.deleteById(id);
+//    }
     @Transactional
     public void deleteAnnotator(Long id) {
         Optional<User> annotatorOptional = userRepository.findById(id);
@@ -71,8 +84,9 @@ public class AdminService {
         if (!(annotator instanceof Annotateur)) {
             throw new IllegalArgumentException("L'utilisateur avec l'ID " + id + " n'est pas un annotateur.");
         }
-        // Supprimer l'annotateur de la base de données
-        userRepository.deleteById(id);
+        // Suppression logique : mettre deleted à true
+        annotator.setDeleted(true);
+        userRepository.save(annotator);
     }
 
 
@@ -83,9 +97,9 @@ public class AdminService {
      */
     @Transactional
     public void addAnnotator(User annotatorData) {
-        if (annotatorData == null || annotatorData.getLogin() == null || annotatorData.getRole() == null) {
-            throw new IllegalArgumentException("Les données de l'annotateur sont invalides");
-        }
+//        if (annotatorData == null || annotatorData.getLogin() == null || annotatorData.getRole() == null) {
+//            throw new IllegalArgumentException("Les données de l'annotateur sont invalides");
+//        }
         Role role = roleRepository.findByRole("ANNOTATEUR");
         Annotateur annotator = new Annotateur();
         annotator.setNom(annotatorData.getNom());
@@ -165,13 +179,11 @@ public class AdminService {
 //    }
     @Transactional(readOnly = true)
     public List<Annotateur> getAllAnnotators() {
-        List<Annotateur> annotators = userRepository.findAllAnnotateurs();
-        annotators.forEach(annotator -> Hibernate.initialize(annotator.getAnnotations()));
-        return annotators.stream()
+        return userRepository.findAll().stream()
+                .filter(user -> user instanceof Annotateur && !((Annotateur) user).isDeleted())
                 .map(user -> (Annotateur) user)
                 .collect(Collectors.toList());
     }
-
     /**
      * Récupère les 5 annotateurs ayant le plus d'annotations.
      *

@@ -6,6 +6,7 @@ import com.myapp.miniprojet.repository.DataSetRepository;
 import com.myapp.miniprojet.repository.TacheRepository;
 import com.myapp.miniprojet.repository.UserRepository;
 import com.opencsv.CSVReader;
+import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvValidationException;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,9 +16,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.StringWriter;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -93,19 +94,19 @@ public class DataSetService {
 
         return datasetProgress;
     }
-
-
-    /**
-     * Récupère tous les datasets.
-     *
-     * @return Liste des datasets
-     */
-    @Transactional(readOnly = true)
-    public List<DataSet> getAllDatasets() {
-        List<DataSet> datasets = datasetRepository.findAll();
-        datasets.forEach(dataset -> Hibernate.initialize(dataset.getCouplesTextes()));
-        return datasets;
-    }
+//
+//
+//    /**
+//     * Récupère tous les datasets.
+//     *
+//     * @return Liste des datasets
+//     */
+//    @Transactional(readOnly = true)
+//    public List<DataSet> getAllDatasets() {
+//        List<DataSet> datasets = datasetRepository.findAll();
+//        datasets.forEach(dataset -> Hibernate.initialize(dataset.getCouplesTextes()));
+//        return datasets;
+//    }
 
     /**
      * Récupère un dataset par ID.
@@ -119,6 +120,33 @@ public class DataSetService {
                 .orElseThrow(() -> new IllegalArgumentException("Dataset non trouvé : " + id));
         Hibernate.initialize(dataset.getCouplesTextes());
         return dataset;
+    }
+    public String exportAnnotatedDataset(Long datasetId) throws IOException {
+        DataSet dataset = datasetRepository.findById(datasetId).orElseThrow(() -> new IllegalArgumentException("Dataset non trouvé avec l'ID : " + datasetId));
+        List<CoupleTexte> couples = dataset.getCouplesTextes();
+
+        // Vérifier que tous les couples sont annotés
+        boolean allAnnotated = couples.stream()
+                .allMatch(couple -> couple.getAnnotation() != null && couple.getAnnotation().getClassChoisi() != null);
+        if (!allAnnotated) {
+            throw new IllegalStateException("Le dataset n'est pas entièrement annoté.");
+        }
+
+        // Créer un fichier CSV avec les colonnes : texte1, texte2, annotation
+        StringWriter stringWriter = new StringWriter();
+        CSVWriter csvWriter = new CSVWriter(stringWriter);
+        csvWriter.writeNext(new String[]{"texte1", "texte2", "annotation"});
+
+        for (CoupleTexte couple : couples) {
+            csvWriter.writeNext(new String[]{
+                    couple.getTexte1(),
+                    couple.getTexte2(),
+                    couple.getAnnotation().getClassChoisi()
+            });
+        }
+
+        csvWriter.close();
+        return stringWriter.toString();
     }
 
     @Transactional
@@ -161,46 +189,9 @@ public class DataSetService {
                 // Sauvegarder les couples texte
                 datasetRepository.save(persistentDataset);
 
-                // Répartir les couples entre annotateurs
-                List<Annotateur> annotateurs = userRepository.findAllAnnotateurs();
-                int totalCouples = allCouples.size();
-                int annotatorsCount = annotateurs.size();
-                int couplesPerAnnotator = (int) Math.ceil((double) totalCouples / annotatorsCount);
-
-                System.out.println("Total couples : " + totalCouples + ", Annotateurs : " + annotatorsCount + ", Couples par annotateur : " + couplesPerAnnotator);
-
-                for (int i = 0; i < annotateurs.size(); i++) {
-                    Annotateur annotateur = annotateurs.get(i);
-                    Tache tache = tacheRepository.findByAnnotateurIdAndDatasetId(annotateur.getId(), persistentDataset.getId())
-                            .orElseGet(() -> {
-                                Tache newTache = new Tache();
-                                newTache.setAnnotateur(annotateur);
-                                newTache.setDataset(persistentDataset);
-                                newTache.setProgress(0);
-                                newTache.setProgressPercentage(0);
-                                newTache.setCouplesTextes(new ArrayList<>());
-                                return newTache;
-                            });
-
-                    // Répartir les couples texte
-                    int startIndex = i * couplesPerAnnotator;
-                    int endIndex = Math.min(startIndex + couplesPerAnnotator, totalCouples);
-                    List<CoupleTexte> assignedCouples = allCouples.subList(startIndex, endIndex);
-                    tache.getCouplesTextes().clear(); // Vider la liste existante
-                    for (CoupleTexte ct : assignedCouples) {
-                        ct.setTache(tache); // Définir la relation bidirectionnelle
-                        tache.getCouplesTextes().add(ct);
-                    }
-                    tache.setSize(tache.getCouplesTextes().size());
-
-                    // Sauvegarder la tâche avec les couples
-                    tacheRepository.save(tache);
-
-                    System.out.println("Tache mise à jour pour annotateur " + annotateur.getId() + " : size = " + tache.getSize());
-                    for (CoupleTexte ct : tache.getCouplesTextes()) {
-                        System.out.println("  - Couple assigné : Texte1: " + ct.getTexte1() + ", Texte2: " + ct.getTexte2() + ", tache_id: " + ct.getTache().getId());
-                    }
-                }
+                // Note : On ne répartit plus automatiquement les annotateurs ici.
+                // L'administrateur choisira les annotateurs via l'interface.
+                System.out.println("Dataset créé avec " + allCouples.size() + " couples. En attente de l'affectation des annotateurs.");
             }
         }
     }
@@ -210,6 +201,13 @@ public class DataSetService {
                 .filter(d -> d.getId().equals(id))
                 .findFirst()
                 .orElse(null);
+    }
+    public List<Annotateur> getAnnotateursForDataset(Long datasetId) {
+        List<Tache> tasks = tacheRepository.findByDatasetId(datasetId);
+        return tasks.stream()
+                .map(Tache::getAnnotateur)
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
@@ -236,6 +234,7 @@ public class DataSetService {
         return result;
     }
 
+
     @Transactional
     public void assignAnnotatorToDataset(Long datasetId, Long annotatorId) {
         DataSet dataset = findDatasetById(datasetId);
@@ -251,7 +250,7 @@ public class DataSetService {
 
         boolean isAlreadyAssigned = dataset.getTaches().stream()
                 .map(Tache::getAnnotateur)
-                .anyMatch(a -> a.getId() == annotatorId);
+                .anyMatch(a -> a.getId()==annotatorId);
         if (isAlreadyAssigned) {
             throw new IllegalStateException("L'annotateur est déjà affecté à ce dataset.");
         }
@@ -259,8 +258,21 @@ public class DataSetService {
         Tache tache = new Tache();
         tache.setDataset(dataset);
         tache.setAnnotateur(annotator);
+        tache.setProgress(0);
+        tache.setProgressPercentage(0);
+        tache.setSize(0); // Initialement vide, sera mis à jour lors de la répartition
+        tache.setCouplesTextes(new ArrayList<>());
+
+        // Ajouter une date limite de 3 jours à partir de maintenant
+        LocalDateTime dateLimite = LocalDateTime.now().plusDays(3);
+        Date dateLimiteAsDate = Date.from(dateLimite.atZone(ZoneId.systemDefault()).toInstant());
+        tache.setDateLimite(dateLimiteAsDate);
+
         dataset.getTaches().add(tache);
         datasetRepository.save(dataset);
+    }
+    public List<DataSet> getAllDatasets() {
+        return datasetRepository.findAll();
     }
 //
 //    @Transactional
@@ -281,6 +293,7 @@ public class DataSetService {
 //        dataset.getTaches().remove(tacheToRemove);
 //        datasetRepository.save(dataset);
 //    }
+@Transactional
 public void distributeTasksToAnnotators(DataSet dataset, List<Long> annotatorIds) {
     // Récupérer les couples non annotés
     List<CoupleTexte> allCouples = new ArrayList<>(dataset.getCouplesTextes());
@@ -303,8 +316,9 @@ public void distributeTasksToAnnotators(DataSet dataset, List<Long> annotatorIds
     int couplesPerAnnotator = totalUnannotated / annotatorCount;
     int remainingCouples = totalUnannotated % annotatorCount;
 
-    // Vider la collection existante au lieu de la remplacer
-    dataset.getTaches().clear(); // Cela permet à Hibernate de gérer les orphelins correctement
+    // Ajouter une date limite de 3 jours à partir de maintenant
+    LocalDateTime dateLimite = LocalDateTime.now().plusDays(3);
+    Date dateLimiteAsDate = Date.from(dateLimite.atZone(ZoneId.systemDefault()).toInstant());
 
     // Répartir les couples
     int startIndex = 0;
@@ -313,16 +327,85 @@ public void distributeTasksToAnnotators(DataSet dataset, List<Long> annotatorIds
                 .orElseThrow(() -> new IllegalArgumentException("Annotateur non trouvé : " + annotatorId));
         int endIndex = startIndex + couplesPerAnnotator + (remainingCouples > 0 ? 1 : 0);
         List<CoupleTexte> taskCouples = unannotatedCouples.subList(startIndex, Math.min(endIndex, unannotatedCouples.size()));
-        Tache tache = new Tache();
-        tache.setDataset(dataset);
-        tache.setAnnotateur(annotator);
-        tache.setCouplesTextes(taskCouples);
-        dataset.getTaches().add(tache);
+
+        // Vérifier si l'annotateur a déjà une tâche
+        Tache tache = dataset.getTaches().stream()
+                .filter(t -> t.getAnnotateur().getId()==annotatorId)
+                .findFirst()
+                .orElseGet(() -> {
+                    Tache newTache = new Tache();
+                    newTache.setDataset(dataset);
+                    newTache.setAnnotateur(annotator);
+                    newTache.setCouplesTextes(new ArrayList<>());
+                    newTache.setProgress(0);
+                    newTache.setProgressPercentage(0);
+                    newTache.setDateLimite(dateLimiteAsDate);
+                    dataset.getTaches().add(newTache);
+                    return newTache;
+                });
+
+        // Ajouter les couples à la tâche existante
+        for (CoupleTexte couple : taskCouples) {
+            couple.setTache(tache);
+            tache.getCouplesTextes().add(couple);
+        }
+
+        // Mettre à jour size et progressPercentage
+        tache.setSize(tache.getCouplesTextes().size());
+        tache.setProgress(0); // Initialement, aucun couple n'est annoté
+        tache.setProgressPercentage(0);
+        tache.setDateLimite(dateLimiteAsDate);
+
         startIndex = endIndex;
         remainingCouples--;
     }
+
+    // Supprimer les couples non annotés de la liste générale du dataset
+    dataset.getCouplesTextes().removeAll(unannotatedCouples);
     datasetRepository.save(dataset);
 }
+//public void distributeTasksToAnnotators(DataSet dataset, List<Long> annotatorIds) {
+//    // Récupérer les couples non annotés
+//    List<CoupleTexte> allCouples = new ArrayList<>(dataset.getCouplesTextes());
+//    Set<CoupleTexte> annotatedCouples = allCouples.stream()
+//            .filter(couple -> couple.getAnnotation() != null)
+//            .collect(Collectors.toSet());
+//    List<CoupleTexte> unannotatedCouples = allCouples.stream()
+//            .filter(couple -> !annotatedCouples.contains(couple))
+//            .collect(Collectors.toList());
+//
+//    // Mélanger les couples non annotés
+//    Collections.shuffle(unannotatedCouples, new Random());
+//
+//    // Calculer la répartition
+//    int totalUnannotated = unannotatedCouples.size();
+//    int annotatorCount = annotatorIds.size();
+//    if (annotatorCount == 0) {
+//        throw new IllegalArgumentException("Aucun annotateur sélectionné pour la répartition.");
+//    }
+//    int couplesPerAnnotator = totalUnannotated / annotatorCount;
+//    int remainingCouples = totalUnannotated % annotatorCount;
+//
+//    // Vider la collection existante au lieu de la remplacer
+//    dataset.getTaches().clear(); // Cela permet à Hibernate de gérer les orphelins correctement
+//
+//    // Répartir les couples
+//    int startIndex = 0;
+//    for (Long annotatorId : annotatorIds) {
+//        Annotateur annotator = annotateurRepository.findById(annotatorId)
+//                .orElseThrow(() -> new IllegalArgumentException("Annotateur non trouvé : " + annotatorId));
+//        int endIndex = startIndex + couplesPerAnnotator + (remainingCouples > 0 ? 1 : 0);
+//        List<CoupleTexte> taskCouples = unannotatedCouples.subList(startIndex, Math.min(endIndex, unannotatedCouples.size()));
+//        Tache tache = new Tache();
+//        tache.setDataset(dataset);
+//        tache.setAnnotateur(annotator);
+//        tache.setCouplesTextes(taskCouples);
+//        dataset.getTaches().add(tache);
+//        startIndex = endIndex;
+//        remainingCouples--;
+//    }
+//    datasetRepository.save(dataset);
+//}
 
     @Transactional
     public void removeAnnotatorFromDataset(Long datasetId, Long annotatorId) {
@@ -341,18 +424,11 @@ public void distributeTasksToAnnotators(DataSet dataset, List<Long> annotatorIds
     }
 
     public List<Annotateur> getAvailableAnnotators(Long datasetId) {
-        // Logique pour récupérer les annotateurs non affectés à ce dataset
-        DataSet dataset = findDatasetById(datasetId);
-        List<Annotateur> allAnnotators = annotateurRepository.findAll();
-        if (dataset != null) {
-            Set<Long> assignedAnnotatorIds = dataset.getTaches().stream()
-                    .map(tache -> tache.getAnnotateur().getId())
-                    .collect(Collectors.toSet());
-            return allAnnotators.stream()
-                    .filter(annotator -> !assignedAnnotatorIds.contains(annotator.getId()))
-                    .collect(Collectors.toList());
-        }
-        return allAnnotators;
+        List<Annotateur> allAnnotators = userRepository.findAllAnnotateurs();
+        List<Annotateur> assignedAnnotators = getAnnotateursForDataset(datasetId);
+        return allAnnotators.stream()
+                .filter(annotator -> !assignedAnnotators.contains(annotator))
+                .collect(Collectors.toList());
     }
 
     public Annotateur findAnnotatorById(Long id) {

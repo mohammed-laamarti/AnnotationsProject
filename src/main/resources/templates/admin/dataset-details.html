@@ -11,7 +11,6 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-
 </head>
 <body>
 <div layout:fragment="content">
@@ -25,6 +24,11 @@
         <p><strong>Classes possibles :</strong>
             <span th:each="classe : ${dataset.classesPossibles}" th:text="' ' + ${classe.nom}"></span>
             <span th:if="${#lists.isEmpty(dataset.classesPossibles)}">(Aucune classe)</span>
+        </p>
+        <p><strong>Annotateurs affectés :</strong>
+            <span th:if="${#lists.isEmpty(annotateurs)}">Aucun annotateur affecté</span>
+            <span th:each="annotateur, iter : ${annotateurs}"
+                  th:text="${annotateur.login + (iter.last ? '' : ' , ')}"></span>
         </p>
     </div>
 
@@ -46,6 +50,11 @@
             </tr>
             </tbody>
         </table>
+    </div>
+
+    <!-- Bouton d'exportation conditionnel -->
+    <div th:if="${progress == 100}" class="mt-4">
+        <a th:href="@{'/admin/dataset/export/' + ${dataset.id}}" class="btn-export">Exporter dataset annoté</a>
     </div>
 
     <script th:inline="none">
