@@ -64,12 +64,12 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void initAnnotateurs() {
-        String[] noms = {"Dupont", "Martin", "Bernard"};
-        String[] prenoms = {"Jean", "Marie", "Pierre"};
+        String[] noms = {"Dupont", "Martin", "Bernard","laamarti","azeroual","ouchajaa"};
+        String[] prenoms = {"Jean", "Marie", "Pierre","mohammed","hicham","amine"};
 
         Role annotRole = roleRepository.findByRole("ANNOTATEUR");
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 6; i++) {
             String login = "annot" + (i + 1);
             if (!userRepository.existsByLogin(login)) {
                 Annotateur annotateur = new Annotateur();
