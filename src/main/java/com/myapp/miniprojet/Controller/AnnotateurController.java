@@ -32,6 +32,7 @@ public class AnnotateurController {
             List<Tache> tasks = annotateurService.getTasksForAnnotator(userId);
             System.out.println("Nombre de tâches récupérées : " + (tasks != null ? tasks.size() : "null"));
             tasks.forEach(System.out::println);
+            model.addAttribute("login", login);
             model.addAttribute("tasks", tasks);
             return "annotateur/acceuil";
         } catch (Exception e) {

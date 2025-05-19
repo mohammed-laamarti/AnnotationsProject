@@ -65,12 +65,12 @@
 </head>
 <body>
 <div class="annotator-dashboard">
-    <div style="text-align: right;">
+    <div class="logout-btn-container">
         <form th:action="@{/logout}" method="post">
             <button type="submit" class="logout-btn">Déconnexion</button>
         </form>
     </div>
-    <h2>Bienvenue, Annotateur !</h2>
+    <h2 th:text="'Bienvenue, ' + ${login} + '!'">Bienvenue, Annotateur !</h2>
     <p class="text-muted">Gérez vos tâches d’annotation et suivez votre progression.</p>
     <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
     <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
