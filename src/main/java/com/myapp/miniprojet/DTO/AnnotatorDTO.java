@@ -1,4 +1,4 @@
-package com.myapp.miniprojet.dto;
+package com.myapp.miniprojet.DTO;
 
 import com.myapp.miniprojet.model.Annotateur;
 

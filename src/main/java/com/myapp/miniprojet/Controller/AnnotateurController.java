@@ -3,7 +3,7 @@ package com.myapp.miniprojet.Controller;
 import com.myapp.miniprojet.model.CoupleTexte;
 import com.myapp.miniprojet.model.Tache;
 import com.myapp.miniprojet.service.AnnotateurService;
-import com.myapp.miniprojet.service.UserDetailsServiceImpl;
+import com.myapp.miniprojet.Security.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

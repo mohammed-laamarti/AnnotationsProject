@@ -1,4 +1,4 @@
-package com.myapp.miniprojet.service;
+package com.myapp.miniprojet.Security;
 
 import com.myapp.miniprojet.model.User;
 import com.myapp.miniprojet.repository.UserRepository;

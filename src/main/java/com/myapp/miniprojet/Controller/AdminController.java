@@ -2,13 +2,11 @@ package com.myapp.miniprojet.Controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.myapp.miniprojet.dto.AnnotatorDTO;
+import com.myapp.miniprojet.DTO.AnnotatorDTO;
 import com.myapp.miniprojet.model.*;
 import com.myapp.miniprojet.service.AdminService;
-import com.myapp.miniprojet.service.DataSetService;
 import com.opencsv.exceptions.CsvValidationException;
 import jakarta.servlet.http.HttpSession;
-import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -28,16 +26,14 @@ public class AdminController {
 
     @Autowired
     private AdminService adminService;
-    @Autowired
-    private DataSetService dataSetService;
 
     @GetMapping("/dashboard")
     public String dashboard(Model model) throws JsonProcessingException {
 
-        model.addAttribute("datasets", dataSetService.getAllDatasets());
+        model.addAttribute("datasets", adminService.getAllDatasets());
         model.addAttribute("totalAnnotators", adminService.getAllAnnotators().size());
         model.addAttribute("totalAnnotationsToday", 78);
-        List<Object> progressData = dataSetService.getDatasetProgressData();
+        List<Object> progressData = adminService.getDatasetProgressData();
         List<String> datasetNames = (List<String>) progressData.get(0);
         List<Integer> datasetProgress = (List<Integer>) progressData.get(1);
         System.out.println(datasetNames);
@@ -60,9 +56,9 @@ public class AdminController {
     }
     @GetMapping("/datasets")
     public String datasets(Model model) {
-        // Récupérer les datasets et leurs progrès via DataSetService
-        List<DataSet> datasets = dataSetService.getAllDatasets();
-        Map<Long, Integer> datasetProgress = dataSetService.getDatasetProgressMap();
+        // Récupérer les datasets et leurs progrès via adminService
+        List<DataSet> datasets = adminService.getAllDatasets();
+        Map<Long, Integer> datasetProgress = adminService.getDatasetProgressMap();
 
 
 
@@ -99,7 +95,7 @@ public class AdminController {
         }
 
         try {
-            dataSetService.createDataset(dataset, file);
+            adminService.createDataset(dataset, file);
             model.addAttribute("successMessage", "Dataset créé avec succès.");
         } catch (IOException | CsvValidationException e) {
             model.addAttribute("errorMessage", "Erreur lors de la création : " + e.getMessage());
@@ -110,7 +106,7 @@ public class AdminController {
 
     @GetMapping("/dataset/details/{id}")
     public String datasetDetails(@PathVariable Long id, Model model) {
-        DataSet dataset = dataSetService.getAllDatasets().stream()
+        DataSet dataset = adminService.getAllDatasets().stream()
                 .filter(d -> d.getId().equals(id))
                 .findFirst()
                 .orElse(null);
@@ -121,11 +117,11 @@ public class AdminController {
         System.out.println(dataset.getClassesPossibles());
 
         // Calculer le pourcentage d'avancement
-        Map<Long, Integer> datasetProgress = dataSetService.getDatasetProgressMap();
+        Map<Long, Integer> datasetProgress = adminService.getDatasetProgressMap();
         int progress = datasetProgress.getOrDefault(id, 0);
 
         // Récupérer les annotateurs affectés
-        java.util.List<com.myapp.miniprojet.model.Annotateur> annotateurs = dataSetService.getAnnotateursForDataset(id);
+        java.util.List<com.myapp.miniprojet.model.Annotateur> annotateurs = adminService.getAnnotateursForDataset(id);
 
         model.addAttribute("dataset", dataset);
         model.addAttribute("progress", progress);
@@ -137,13 +133,13 @@ public class AdminController {
 
 //    @GetMapping("/dataset/assign/{id}")
 //    public String assignAnnotators(@PathVariable Long id, Model model) {
-//        DataSet dataset = dataSetService.findDatasetById(id);
+//        DataSet dataset = adminService.findDatasetById(id);
 //        if (dataset == null) {
 //            return "redirect:/admin/datasets";
 //        }
 //        System.out.println("Dataset ID passé au modèle : " + dataset.getId());
 //
-//        Map<String, List<Annotateur>> annotatorsMap = dataSetService.getAnnotatorsForAssignment(id);
+//        Map<String, List<Annotateur>> annotatorsMap = adminService.getAnnotatorsForAssignment(id);
 //        model.addAttribute("dataset", dataset);
 //        model.addAttribute("assignedAnnotators", annotatorsMap.get("assigned"));
 //        model.addAttribute("availableAnnotators", annotatorsMap.get("available"));
@@ -154,7 +150,7 @@ public class AdminController {
     public String assignAnnotator(@PathVariable("id") Long datasetId, @RequestParam("annotatorId") Long annotatorId, Model model) {
 
         try {
-            dataSetService.assignAnnotatorToDataset(datasetId, annotatorId);
+            adminService.assignAnnotatorToDataset(datasetId, annotatorId);
             model.addAttribute("successMessage", "Annotateur affecté avec succès.");
         } catch (Exception e) {
             model.addAttribute("errorMessage", "Erreur lors de l'affectation : " + e.getMessage());
@@ -166,7 +162,7 @@ public class AdminController {
 //    public String removeAnnotator(@PathVariable Long datasetId, @PathVariable Long annotatorId, Model model) {
 //        System.out.println("---------------------'");
 //        try {
-//            dataSetService.removeAnnotatorFromDataset(datasetId, annotatorId);
+//            adminService.removeAnnotatorFromDataset(datasetId, annotatorId);
 //            model.addAttribute("successMessage", "Annotateur retiré avec succès.");
 //        } catch (Exception e) {
 //            model.addAttribute("errorMessage", "Erreur lors du retrait : " + e.getMessage());
@@ -175,7 +171,7 @@ public class AdminController {
 //    }
 @GetMapping("/dataset/assign/{id}")
 public String showAssignAnnotators(@PathVariable Long id, Model model, HttpSession session) {
-    DataSet dataset = dataSetService.findDatasetById(id);
+    DataSet dataset = adminService.findDatasetById(id);
     if (dataset == null) {
         model.addAttribute("errorMessage", "Dataset non trouvé.");
         return "redirect:/admin/datasets";
@@ -188,7 +184,7 @@ public String showAssignAnnotators(@PathVariable Long id, Model model, HttpSessi
     System.out.println("Annotateurs affectés : " + assignedAnnotators);
 
     // Récupérer les annotateurs disponibles
-    List<Annotateur> availableAnnotators = dataSetService.getAvailableAnnotators(dataset.getId());
+    List<Annotateur> availableAnnotators = adminService.getAvailableAnnotators(dataset.getId());
     System.out.println("Annotateurs disponibles : " + availableAnnotators);
 
     // Récupérer la liste des annotateurs sélectionnés depuis la session
@@ -202,7 +198,7 @@ public String showAssignAnnotators(@PathVariable Long id, Model model, HttpSessi
     // Récupérer les annotateurs correspondants aux selectedAnnotatorIds
     List<Annotateur> selectedAnnotators = selectedAnnotatorIds.stream()
             .map(annotatorId -> {
-                Annotateur annotator = dataSetService.findAnnotatorById(annotatorId);
+                Annotateur annotator = adminService.findAnnotatorById(annotatorId);
                 System.out.println("Recherche annotateur ID " + annotatorId + " : " + annotator);
                 return annotator;
             })
@@ -222,13 +218,13 @@ public String showAssignAnnotators(@PathVariable Long id, Model model, HttpSessi
 
     @PostMapping("/dataset/assign/{id}/add")
     public String addAnnotator(@PathVariable Long id, @RequestParam Long annotatorId, Model model, HttpSession session) {
-        DataSet dataset = dataSetService.findDatasetById(id);
+        DataSet dataset = adminService.findDatasetById(id);
         if (dataset == null) {
             model.addAttribute("errorMessage", "Dataset non trouvé.");
             return "redirect:/admin/datasets";
         }
 
-        Annotateur annotator = dataSetService.findAnnotatorById(annotatorId);
+        Annotateur annotator = adminService.findAnnotatorById(annotatorId);
         System.out.println("Annotateur trouvé : " + annotator);
         if (annotator == null) {
             model.addAttribute("errorMessage", "Annotateur non trouvé avec l'ID : " + annotatorId);
@@ -243,7 +239,7 @@ public String showAssignAnnotators(@PathVariable Long id, Model model, HttpSessi
         if (!selectedAnnotatorIds.contains(annotatorId)) {
             selectedAnnotatorIds.add(annotatorId);
             System.out.println("Annotateur ajouté : " + annotatorId);
-            dataSetService.assignAnnotatorToDataset(id, annotatorId);
+            adminService.assignAnnotatorToDataset(id, annotatorId);
         }
 
         return "redirect:/admin/dataset/assign/" + id;
@@ -251,13 +247,13 @@ public String showAssignAnnotators(@PathVariable Long id, Model model, HttpSessi
 
     @PostMapping("/dataset/assign/{id}/remove")
     public String removeAnnotator(@PathVariable Long id, @RequestParam Long annotatorId, Model model, HttpSession session) {
-        DataSet dataset = dataSetService.findDatasetById(id);
+        DataSet dataset = adminService.findDatasetById(id);
         if (dataset == null) {
             model.addAttribute("errorMessage", "Dataset non trouvé.");
             return "redirect:/admin/datasets";
         }
 
-        dataSetService.removeAnnotatorFromDataset(dataset.getId(), annotatorId);
+        adminService.removeAnnotatorFromDataset(dataset.getId(), annotatorId);
         List<Long> selectedAnnotatorIds = (List<Long>) session.getAttribute("selectedAnnotatorIds");
         if (selectedAnnotatorIds != null) {
             selectedAnnotatorIds.remove(annotatorId);
@@ -268,20 +264,20 @@ public String showAssignAnnotators(@PathVariable Long id, Model model, HttpSessi
 
 //    @PostMapping("/dataset/assign/{id}/remove")
 //    public String removeAnnotator(@PathVariable Long id, @RequestParam Long annotatorId, Model model) {
-//        DataSet dataset = dataSetService.findDatasetById(id);
+//        DataSet dataset = adminService.findDatasetById(id);
 //        if (dataset == null) {
 //            model.addAttribute("errorMessage", "Dataset non trouvé.");
 //            return "redirect:/admin/datasets";
 //        }
 //
 //        // Supprimer la tâche de l'annotateur sans toucher aux annotations
-//        dataSetService.removeAnnotatorFromDataset(dataset.getId(), annotatorId);
+//        adminService.removeAnnotatorFromDataset(dataset.getId(), annotatorId);
 //        return "redirect:/admin/dataset/assign/" + id;
 //    }
 
     @PostMapping("/dataset/assign/{id}/distribute")
     public String distributeTasks(@PathVariable Long id, Model model, HttpSession session) {
-        DataSet dataset = dataSetService.findDatasetById(id);
+        DataSet dataset = adminService.findDatasetById(id);
         if (dataset == null) {
             model.addAttribute("errorMessage", "Dataset non trouvé.");
             return "redirect:/admin/datasets";
@@ -294,7 +290,7 @@ public String showAssignAnnotators(@PathVariable Long id, Model model, HttpSessi
 
         List<Long> selectedAnnotatorIds = (List<Long>) session.getAttribute("selectedAnnotatorIds");
         if (selectedAnnotatorIds != null && !selectedAnnotatorIds.isEmpty()) {
-            dataSetService.distributeTasksToAnnotators(dataset, selectedAnnotatorIds);
+            adminService.distributeTasksToAnnotators(dataset, selectedAnnotatorIds);
             model.addAttribute("successMessage", "Tâches réparties avec succès.");
             session.setAttribute("selectedAnnotatorIds", new ArrayList<>());
         } else {
@@ -305,7 +301,7 @@ public String showAssignAnnotators(@PathVariable Long id, Model model, HttpSessi
 
     @GetMapping("/dataset/export/{id}")
     public ResponseEntity<byte[]> exportDataset(@PathVariable Long id) throws Exception {
-        String csvContent = dataSetService.exportAnnotatedDataset(id);
+        String csvContent = adminService.exportAnnotatedDataset(id);
 
         // Préparer le fichier pour le téléchargement
         byte[] csvBytes = csvContent.getBytes();
